@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -17,7 +17,6 @@
     <RepositoryUrl>https://github.com/Keboo/Keboo.Mcp</RepositoryUrl>
     <McpServerManifestSource>$(MSBuildProjectDirectory)\.mcp\server.json</McpServerManifestSource>
     <GeneratedMcpServerManifest>$(MSBuildProjectDirectory)\obj\mcp\$(TargetFramework)\$(RuntimeIdentifier)\server.json</GeneratedMcpServerManifest>
-    <McpServerManifestJsonReference>$([MSBuild]::NormalizePath('$(MSBuildBinPath)', 'Sdks', 'Microsoft.NET.Sdk', 'tools', 'net472', 'Newtonsoft.Json.dll'))</McpServerManifestJsonReference>
   </PropertyGroup>
 
   <UsingTask
@@ -30,30 +29,30 @@
       <Version ParameterType="System.String" Required="true" />
     </ParameterGroup>
     <Task>
-      <Reference Include="$(McpServerManifestJsonReference)" />
       <Using Namespace="System.IO" />
-      <Using Namespace="Newtonsoft.Json" />
-      <Using Namespace="Newtonsoft.Json.Linq" />
+      <Using Namespace="System.Text.RegularExpressions" />
       <Code Type="Fragment" Language="cs"><![CDATA[
-        JObject root = JObject.Parse(File.ReadAllText(SourceFile));
+        string content = File.ReadAllText(SourceFile);
 
-        root["version"] = Version;
-
-        JArray packages = root["packages"] as JArray;
-        if (packages != null)
+        Regex versionPattern = new Regex("(^\\s*\"version\"\\s*:\\s*\")[^\"]*(\"\\s*,?\\s*$)", RegexOptions.Multiline);
+        MatchCollection versionMatches = versionPattern.Matches(content);
+        if (versionMatches.Count < 2)
         {
-            foreach (JToken packageNode in packages)
-            {
-                JObject package = packageNode as JObject;
-                if (package != null)
-                {
-                    package["version"] = Version;
-                }
-            }
+            throw new InvalidDataException(string.Format("The MCP server manifest '{0}' does not contain the expected version entries.", SourceFile));
         }
 
-        Directory.CreateDirectory(Path.GetDirectoryName(OutputFile));
-        File.WriteAllText(OutputFile, root.ToString(Formatting.Indented));
+        content = versionPattern.Replace(
+            content,
+            match => match.Groups[1].Value + Version + match.Groups[2].Value);
+
+        string outputDirectory = Path.GetDirectoryName(OutputFile);
+        if (string.IsNullOrEmpty(outputDirectory))
+        {
+            throw new InvalidDataException(string.Format("Could not determine the output directory for '{0}'.", OutputFile));
+        }
+
+        Directory.CreateDirectory(outputDirectory);
+        File.WriteAllText(OutputFile, content);
       ]]></Code>
     </Task>
   </UsingTask>
@@ -64,7 +63,10 @@
   </ItemGroup>
 
   <Target Name="GenerateMcpServerManifest" BeforeTargets="GenerateNuspec">
-    <SyncMcpServerManifestVersion SourceFile="$(McpServerManifestSource)" OutputFile="$(GeneratedMcpServerManifest)" Version="$(Version)" />
+    <SyncMcpServerManifestVersion
+      SourceFile="$(McpServerManifestSource)"
+      OutputFile="$(GeneratedMcpServerManifest)"
+      Version="$(Version)" />
   </Target>
 
   <ItemGroup>
