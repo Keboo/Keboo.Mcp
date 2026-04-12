@@ -1,0 +1,52 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+  "description": "Local stdio MCP server for Microsoft Teams chat workflows.",
+  "name": "io.github.keboo/keboo-mcp",
+  "title": "Keboo MCP",
+  "version": "0.0.1",
+  "websiteUrl": "https://github.com/Keboo/Keboo.Mcp",
+  "packages": [
+    {
+      "registryType": "nuget",
+      "registryBaseUrl": "https://api.nuget.org",
+      "identifier": "Keboo.Mcp",
+      "version": "0.0.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [],
+      "environmentVariables": [
+        {
+          "name": "KebooMcp__Graph__TenantId",
+          "value": "{tenant_id}",
+          "variables": {
+            "tenant_id": {
+              "description": "Microsoft Entra tenant ID for the delegated Microsoft Graph app registration.",
+              "isRequired": true,
+              "isSecret": false
+            }
+          }
+        },
+        {
+          "name": "KebooMcp__Graph__ClientId",
+          "value": "{client_id}",
+          "variables": {
+            "client_id": {
+              "description": "Client ID of the Microsoft Entra app registration used for sign-in.",
+              "isRequired": true,
+              "isSecret": false
+            }
+          }
+        },
+        {
+          "name": "KebooMcp__Graph__AuthenticationMode",
+          "value": "InteractiveBrowser"
+        }
+      ]
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/Keboo/Keboo.Mcp",
+    "source": "github"
+  }
+}
