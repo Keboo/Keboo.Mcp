@@ -1,5 +1,7 @@
 # Keboo.Mcp
 
+<!-- mcp-name: io.github.keboo/keboo-mcp -->
+
 Local stdio MCP server for Microsoft Teams chat workflows.
 
 ## Current tools
@@ -65,6 +67,14 @@ The token cache is persisted locally under the default cache name `Keboo.Mcp`. Y
 ```powershell
 dotnet run --project .\Keboo.Mcp\Keboo.Mcp.csproj
 ```
+
+## Run from NuGet
+
+```powershell
+dnx Keboo.Mcp@0.0.1 --yes
+```
+
+The NuGet package includes an embedded `.mcp/server.json` manifest so MCP clients can discover the stdio transport and prompt for the required `KebooMcp__Graph__TenantId` and `KebooMcp__Graph__ClientId` environment variables.
 
 ## Example MCP client configuration
 

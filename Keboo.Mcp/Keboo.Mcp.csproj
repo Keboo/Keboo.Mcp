@@ -3,20 +3,34 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifiers>win-x64;win-arm64;osx-arm64;linux-x64;linux-arm64;linux-musl-x64</RuntimeIdentifiers>
     <Version>0.0.1</Version>
-  </PropertyGroup>
-
-  <!-- 
-    For packaging as a dotnet global tool 
-    https://learn.microsoft.com/dotnet/core/tools/global-tools-how-to-create
-  -->
-  <!--
-  <PropertyGroup>
     <PackageId>Keboo.Mcp</PackageId>
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>Keboo.Mcp</ToolCommandName>
+    <ToolCommandName>keboo-mcp</ToolCommandName>
+    <PackageType>McpServer</PackageType>
+    <PublishSelfContained>true</PublishSelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>AI;MCP;server;stdio;Teams;Microsoft Graph</PackageTags>
+    <Description>Local stdio MCP server for Microsoft Teams chat workflows.</Description>
+    <RepositoryUrl>https://github.com/Keboo/Keboo.Mcp</RepositoryUrl>
+    <McpServerManifestSource>$(MSBuildProjectDirectory)\.mcp\server.json</McpServerManifestSource>
+    <GeneratedMcpServerManifest>$(MSBuildProjectDirectory)\obj\mcp\$(TargetFramework)\$(RuntimeIdentifier)\server.json</GeneratedMcpServerManifest>
+    <McpServerManifestPowerShell Condition="'$(OS)' == 'Windows_NT'">powershell</McpServerManifestPowerShell>
+    <McpServerManifestPowerShell Condition="'$(OS)' != 'Windows_NT'">pwsh</McpServerManifestPowerShell>
   </PropertyGroup>
-  -->
+
+  <ItemGroup>
+    <None Include="$(GeneratedMcpServerManifest)" Pack="true" PackagePath="/.mcp/" Visible="false" />
+    <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <Target Name="GenerateMcpServerManifest" BeforeTargets="GenerateNuspec">
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(GeneratedMcpServerManifest)'))" />
+    <Exec
+      Command="&quot;$(McpServerManifestPowerShell)&quot; -NoProfile -NonInteractive -Command &quot;$manifest = Get-Content -LiteralPath '$(McpServerManifestSource)' -Raw | ConvertFrom-Json; $manifest.version = '$(Version)'; foreach ($package in $manifest.packages) { $package.version = '$(Version)' }; $utf8 = [System.Text.UTF8Encoding]::new($false); [System.IO.File]::WriteAllText('$(GeneratedMcpServerManifest)', ($manifest | ConvertTo-Json -Depth 100), $utf8)&quot;" />
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="Azure.Identity" />
