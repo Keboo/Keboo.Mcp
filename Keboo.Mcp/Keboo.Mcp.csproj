@@ -17,6 +17,7 @@
     <RepositoryUrl>https://github.com/Keboo/Keboo.Mcp</RepositoryUrl>
     <McpServerManifestSource>$(MSBuildProjectDirectory)\.mcp\server.json</McpServerManifestSource>
     <GeneratedMcpServerManifest>$(MSBuildProjectDirectory)\obj\mcp\$(TargetFramework)\$(RuntimeIdentifier)\server.json</GeneratedMcpServerManifest>
+    <McpServerManifestScript>$(MSBuildProjectDirectory)\obj\mcp\sync-server-json.ps1</McpServerManifestScript>
     <McpServerManifestPowerShell Condition="'$(OS)' == 'Windows_NT'">powershell</McpServerManifestPowerShell>
     <McpServerManifestPowerShell Condition="'$(OS)' != 'Windows_NT'">pwsh</McpServerManifestPowerShell>
   </PropertyGroup>
@@ -28,8 +29,25 @@
 
   <Target Name="GenerateMcpServerManifest" BeforeTargets="GenerateNuspec">
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(GeneratedMcpServerManifest)'))" />
+    <WriteLinesToFile
+      File="$(McpServerManifestScript)"
+      Overwrite="true"
+      Lines=
+        "param(
+  [string]$SourceFile,
+  [string]$OutputFile,
+  [string]$Version
+)
+$ErrorActionPreference = 'Stop'
+$manifest = Get-Content -LiteralPath $SourceFile -Raw | ConvertFrom-Json
+$manifest.version = $Version
+foreach ($package in $manifest.packages) {
+  $package.version = $Version
+}
+$utf8 = [System.Text.UTF8Encoding]::new($false)
+[System.IO.File]::WriteAllText($OutputFile, ($manifest | ConvertTo-Json -Depth 100), $utf8)" />
     <Exec
-      Command="&quot;$(McpServerManifestPowerShell)&quot; -NoProfile -NonInteractive -Command &quot;$manifest = Get-Content -LiteralPath '$(McpServerManifestSource)' -Raw | ConvertFrom-Json; $manifest.version = '$(Version)'; foreach ($package in $manifest.packages) { $package.version = '$(Version)' }; $utf8 = [System.Text.UTF8Encoding]::new($false); [System.IO.File]::WriteAllText('$(GeneratedMcpServerManifest)', ($manifest | ConvertTo-Json -Depth 100), $utf8)&quot;" />
+      Command="&quot;$(McpServerManifestPowerShell)&quot; -NoProfile -NonInteractive -File &quot;$(McpServerManifestScript)&quot; -SourceFile &quot;$(McpServerManifestSource)&quot; -OutputFile &quot;$(GeneratedMcpServerManifest)&quot; -Version &quot;$(Version)&quot;" />
   </Target>
 
   <ItemGroup>
