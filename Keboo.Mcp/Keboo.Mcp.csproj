@@ -17,10 +17,46 @@
     <RepositoryUrl>https://github.com/Keboo/Keboo.Mcp</RepositoryUrl>
     <McpServerManifestSource>$(MSBuildProjectDirectory)\.mcp\server.json</McpServerManifestSource>
     <GeneratedMcpServerManifest>$(MSBuildProjectDirectory)\obj\mcp\$(TargetFramework)\$(RuntimeIdentifier)\server.json</GeneratedMcpServerManifest>
-    <McpServerManifestScript>$(MSBuildProjectDirectory)\obj\mcp\sync-server-json.ps1</McpServerManifestScript>
-    <McpServerManifestPowerShell Condition="'$(OS)' == 'Windows_NT'">powershell</McpServerManifestPowerShell>
-    <McpServerManifestPowerShell Condition="'$(OS)' != 'Windows_NT'">pwsh</McpServerManifestPowerShell>
+    <McpServerManifestJsonReference>$([MSBuild]::NormalizePath('$(MSBuildBinPath)', 'Sdks', 'Microsoft.NET.Sdk', 'tools', 'net472', 'Newtonsoft.Json.dll'))</McpServerManifestJsonReference>
   </PropertyGroup>
+
+  <UsingTask
+    TaskName="SyncMcpServerManifestVersion"
+    TaskFactory="RoslynCodeTaskFactory"
+    AssemblyFile="$([MSBuild]::NormalizePath('$(MSBuildToolsPath)', 'Microsoft.Build.Tasks.Core.dll'))">
+    <ParameterGroup>
+      <SourceFile ParameterType="System.String" Required="true" />
+      <OutputFile ParameterType="System.String" Required="true" />
+      <Version ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="$(McpServerManifestJsonReference)" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="Newtonsoft.Json" />
+      <Using Namespace="Newtonsoft.Json.Linq" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        JObject root = JObject.Parse(File.ReadAllText(SourceFile));
+
+        root["version"] = Version;
+
+        JArray packages = root["packages"] as JArray;
+        if (packages != null)
+        {
+            foreach (JToken packageNode in packages)
+            {
+                JObject package = packageNode as JObject;
+                if (package != null)
+                {
+                    package["version"] = Version;
+                }
+            }
+        }
+
+        Directory.CreateDirectory(Path.GetDirectoryName(OutputFile));
+        File.WriteAllText(OutputFile, root.ToString(Formatting.Indented));
+      ]]></Code>
+    </Task>
+  </UsingTask>
 
   <ItemGroup>
     <None Include="$(GeneratedMcpServerManifest)" Pack="true" PackagePath="/.mcp/" Visible="false" />
@@ -28,26 +64,7 @@
   </ItemGroup>
 
   <Target Name="GenerateMcpServerManifest" BeforeTargets="GenerateNuspec">
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(GeneratedMcpServerManifest)'))" />
-    <WriteLinesToFile
-      File="$(McpServerManifestScript)"
-      Overwrite="true"
-      Lines=
-        "param(
-  [string]$SourceFile,
-  [string]$OutputFile,
-  [string]$Version
-)
-$ErrorActionPreference = 'Stop'
-$manifest = Get-Content -LiteralPath $SourceFile -Raw | ConvertFrom-Json
-$manifest.version = $Version
-foreach ($package in $manifest.packages) {
-  $package.version = $Version
-}
-$utf8 = [System.Text.UTF8Encoding]::new($false)
-[System.IO.File]::WriteAllText($OutputFile, ($manifest | ConvertTo-Json -Depth 100), $utf8)" />
-    <Exec
-      Command="&quot;$(McpServerManifestPowerShell)&quot; -NoProfile -NonInteractive -File &quot;$(McpServerManifestScript)&quot; -SourceFile &quot;$(McpServerManifestSource)&quot; -OutputFile &quot;$(GeneratedMcpServerManifest)&quot; -Version &quot;$(Version)&quot;" />
+    <SyncMcpServerManifestVersion SourceFile="$(McpServerManifestSource)" OutputFile="$(GeneratedMcpServerManifest)" Version="$(Version)" />
   </Target>
 
   <ItemGroup>
