@@ -1,43 +1,26 @@
-﻿using System.CommandLine;
+using System.Reflection;
+using Keboo.Mcp.Configuration;
+using Keboo.Mcp.Services;
+using Keboo.Mcp.Tools;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
-namespace Keboo.Mcp;
+HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
-public sealed class Program
-{
-    private static Task<int> Main(string[] args)
-    {
-        RootCommand rootCommand = BuildCommandLine();
-        return rootCommand.Parse(args).InvokeAsync();
-    }
+builder.Configuration.AddUserSecrets(Assembly.GetExecutingAssembly(), optional: true);
+builder.Logging.AddConsole(options => options.LogToStandardErrorThreshold = LogLevel.Trace);
 
-    public static RootCommand BuildCommandLine()
-    {
-        Argument<int> number1 = new("number1")
-        {
-            Description = "The first number to add"
-        };
-        Argument<int> number2 = new("number2")
-        {
-            Description = "The second number to add"
-        };
-        Command addCommand = new("add", "Add two numbers together")
-        {
-            number1,
-            number2
-        };
-        addCommand.SetAction((ParseResult parseResult) =>
-        {
-            int value1 = parseResult.CommandResult.GetValue(number1);
-            int value2 = parseResult.CommandResult.GetValue(number2);
-            int result = value1 + value2;
-            parseResult.InvocationConfiguration.Output.WriteLine($"The result is {result}");
-        });
+builder.Services.Configure<TeamsGraphOptions>(builder.Configuration.GetSection(TeamsGraphOptions.SectionName));
 
-        RootCommand rootCommand = new("A starter console app by Keboo")
-        {
-            addCommand
-        };
+builder.Services
+    .AddSingleton<ITeamsGraphClient, MicrosoftGraphTeamsClient>()
+    .AddSingleton<ITeamsChatService, TeamsChatService>();
 
-        return rootCommand;
-    }
-}
+builder.Services
+    .AddMcpServer()
+    .WithStdioServerTransport()
+    .WithTools<TeamsChatTools>();
+
+await builder.Build().RunAsync();

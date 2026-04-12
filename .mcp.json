@@ -1,0 +1,16 @@
+{
+  "servers": {
+    "keboo-mcp": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "Keboo.Mcp\\Keboo.Mcp.csproj"
+      ],
+      "env": {
+        "KebooMcp__Graph__AuthenticationMode": "InteractiveBrowser"
+      }
+    }
+  }
+}

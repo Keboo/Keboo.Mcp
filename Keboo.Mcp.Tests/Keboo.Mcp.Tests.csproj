@@ -2,8 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-
     <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+    <EnableMSTestRunner>true</EnableMSTestRunner>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    <TestingPlatformShowTestsFailure>true</TestingPlatformShowTestsFailure>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,13 +14,8 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="MSTest" />
     <PackageReference Include="Moq" />
-    <PackageReference Include="Moq.AutoMock" />
-    <PackageReference Include="System.CommandLine" />
-    <PackageReference Include="TUnit" />
-    <PackageReference Include="TUnit.Assertions" />
-    <PackageReference Include="TUnit.Engine" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,11 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="TUnit.Assertions" />
-    <Using Include="TUnit.Assertions.Extensions" />
-    <Using Include="TUnit.Core" />
     <Using Include="Moq" />
-    <Using Include="Moq.AutoMock" />
   </ItemGroup>
 
 </Project>

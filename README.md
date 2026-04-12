@@ -1,73 +1,92 @@
-# Command line app template
-This template creates a [System.CommandLine](https://github.com/dotnet/command-line-api) solution, along with unit tests.
+# Keboo.Mcp
 
+Local stdio MCP server for Microsoft Teams chat workflows.
 
-## Template
-Create a new app in your current directory by running.
+## Current tools
 
-```cli
-> dotnet new keboo.console
+The first tool set is focused on Microsoft Teams chats:
+
+| Tool | Purpose |
+| --- | --- |
+| `ListChats` | Lists the signed-in user's chats with chat IDs, members, and preview metadata. |
+| `SendChatMessage` | Sends a plain-text message to an existing Teams chat by chat ID. |
+| `SendDirectMessage` | Sends a plain-text direct message to a user by work-account UPN/email or Microsoft Entra user ID. Existing 1:1 chats are reused; otherwise one is created. |
+
+## Requirements
+
+1. .NET 10 SDK
+2. A Microsoft Entra app registration for delegated Microsoft Graph access
+3. A work or school Microsoft 365 account
+
+> Microsoft Teams chat APIs used here don't support personal Microsoft accounts for these delegated flows.
+
+## Required Microsoft Graph delegated permissions
+
+Grant these delegated permissions to the app registration used by the server:
+
+- `User.Read`
+- `Chat.Read`
+- `Chat.Create`
+- `ChatMessage.Send`
+
+`ListChats` uses `Chat.Read`. `SendDirectMessage` uses `Chat.Create` plus `ChatMessage.Send`. The server uses delegated auth, so actions happen as the signed-in user.
+
+## Configure the server
+
+The server reads configuration from either user secrets or environment variables.
+
+### Option 1: user secrets
+
+```powershell
+dotnet user-secrets set "KebooMcp:Graph:TenantId" "<tenant-id>" --project .\Keboo.Mcp\Keboo.Mcp.csproj
+dotnet user-secrets set "KebooMcp:Graph:ClientId" "<client-id>" --project .\Keboo.Mcp\Keboo.Mcp.csproj
+dotnet user-secrets set "KebooMcp:Graph:AuthenticationMode" "InteractiveBrowser" --project .\Keboo.Mcp\Keboo.Mcp.csproj
 ```
 
-### Parameters
-[Default template options](https://learn.microsoft.com/dotnet/core/tools/dotnet-new#options)
+### Option 2: environment variables
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `--pipeline` | CI/CD provider to use. Options: `github`, `azuredevops`, `none` | `github` |
-| `--sln` | Use legacy .sln format instead of .slnx format | `false` |
-| `--tests` | Testing framework to use. Options: `xunit`, `mstest`, `tunit`, `none` | `xunit` |
-
-**Example with Azure DevOps:**
-```cli
-> dotnet new keboo.console --pipeline azuredevops
+```powershell
+$env:KebooMcp__Graph__TenantId = "<tenant-id>"
+$env:KebooMcp__Graph__ClientId = "<client-id>"
+$env:KebooMcp__Graph__AuthenticationMode = "InteractiveBrowser"
 ```
 
-**Example with no CI/CD pipeline:**
-```cli
-> dotnet new keboo.console --pipeline none
+### Authentication modes
+
+| Value | Behavior |
+| --- | --- |
+| `InteractiveBrowser` | Opens a local browser for sign-in. This is the default and best fit for local desktop use. |
+| `DeviceCode` | Prints a device-code prompt to stderr for environments where opening a browser isn't practical. |
+
+The token cache is persisted locally under the default cache name `Keboo.Mcp`. You can override it with `KebooMcp__Graph__TokenCacheName`.
+
+## Run locally
+
+```powershell
+dotnet run --project .\Keboo.Mcp\Keboo.Mcp.csproj
 ```
 
-**Example with legacy .sln format:**
-```cli
-> dotnet new keboo.console --sln true
+## Example MCP client configuration
+
+This repo includes a root `.mcp.json` file so clients that support repository-scoped MCP configuration can discover the server automatically.
+
+If you need to add it manually, use this shape:
+
+```json
+{
+  "servers": {
+    "keboo-mcp": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "Keboo.Mcp\\Keboo.Mcp.csproj"
+      ],
+      "env": {
+        "KebooMcp__Graph__AuthenticationMode": "InteractiveBrowser"
+      }
+    }
+  }
+}
 ```
-
-**Example with MSTest:**
-```cli
-> dotnet new keboo.console --tests mstest
-```
-
-**Example with no tests:**
-```cli
-> dotnet new keboo.console --tests none
-```
-
-## Updating .NET Version
-
-This template uses a `global.json` file to specify the required .NET SDK version. To update the .NET SDK version:
-
-1. Update the `global.json` file in the solution root
-2. Update the `<TargetFramework>` in the `csproj` files.
-
-## Key Features
-
-### Build Customization
-[Docs](https://learn.microsoft.com/visualstudio/msbuild/customize-by-directory?view=vs-2022&WT.mc_id=DT-MVP-5003472)
-
-### Centralized Package Management
-[Docs](https://learn.microsoft.com/nuget/consume-packages/Central-Package-Management?WT.mc_id=DT-MVP-5003472)
-
-### NuGet package source mapping
-[Docs](https://learn.microsoft.com/nuget/consume-packages/package-source-mapping?WT.mc_id=DT-MVP-5003472)
-
-### GitHub Actions / Azure DevOps Pipeline
-Build, test, and code coverage reporting included. Use `--pipeline` parameter to choose between GitHub Actions (default) or Azure DevOps Pipelines.
-
-### Solution File Format (slnx)
-By default, this template uses the new `.slnx` (XML-based solution) format introduced in .NET 9. This modern format is more maintainable and easier to version control compared to the legacy `.sln` format.
-
-[Blog: Introducing slnx support in the dotnet CLI](https://devblogs.microsoft.com/dotnet/introducing-slnx-support-dotnet-cli/?WT.mc_id=DT-MVP-5003472)  
-[Docs: dotnet sln command](https://learn.microsoft.com/dotnet/core/tools/dotnet-sln?WT.mc_id=DT-MVP-5003472)
-
-If you need to use the legacy `.sln` format, use the `--sln true` parameter when creating the template.
