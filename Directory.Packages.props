@@ -19,7 +19,7 @@
   This would typically list all NuGet packages used within this solution.
   -->
   <ItemGroup>
-    <PackageVersion Include="Azure.Identity" Version="1.20.0" />
+    <PackageVersion Include="Azure.Identity" Version="1.21.0" />
     <PackageVersion Include="Microsoft.Graph" Version="5.103.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
