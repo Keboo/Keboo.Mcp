@@ -33,7 +33,7 @@ jobs:
         run: dotnet test --configuration Release --no-build --coverage --coverage-output coverage.cobertura.xml --coverage-output-format cobertura --results-directory ./code-coverage
 
       - name: ReportGenerator
-        uses: danielpalme/ReportGenerator-GitHub-Action@5.5.4
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.5.5
         with:
           reports: code-coverage/**/coverage.cobertura.xml
           targetdir: coveragereport
